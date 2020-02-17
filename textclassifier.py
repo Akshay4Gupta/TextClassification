@@ -3,6 +3,20 @@ import pandas as pd
 import math
 import time
 
+# data/testdata.manual.2009.06.14.csv
+# data/training.1600000.processed.noemoticon.csv
+trainingData = pd.read_csv("../data/training.1600000.processed.noemoticon.csv",
+header = None,
+names = ['polarity', 'id', 'date', 'query',
+'username', 'tweet'],
+encoding = "Latin-1")
+
+testingData = pd.read_csv("../data/testdata.manual.2009.06.14.csv",
+header = None,
+names = ['polarity', 'id', 'date', 'query',
+'username', 'tweet'],
+encoding = "ISO-8859-1")
+
 # functions
 def processingDocument(yEqualsK, words, dictionary, yEqualsKwc):
     wordcount = 0
@@ -30,22 +44,43 @@ def total_keys(dict1, dict2):
             count += 1
     return (dicto, count)
 
+def accuracy(Data, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix):
+    GivenxyEqual = list()
+    correct = 0
+    wrong = 0
+    for j in Data.itertuples():
+        if j[1] == 0 or j[1] == 4 :
+            words = j[6].replace(',', ' ').replace('.', ' ').split()
+            gxye0 = phi[0]
+            gxye1 = phi[1]
+            for k in words:
+                if k in philyEquals[0]:
+                    gxye0 += math.log(philyEquals[0][k])
+                else:
+                    gxye0 += math.log(1/(keysInDict + wcyEquals[0]))
+                if k in philyEquals[1]:
+                    gxye1 += math.log(philyEquals[1][k])
+                else:
+                    gxye1 += math.log(1/(keysInDict + wcyEquals[1]))
+            GivenxyEqual.append([math.log(phi[0]) + gxye0, math.log(phi[1]) + gxye1])
+            if(GivenxyEqual[-1][0] > GivenxyEqual[-1][1]):
+                if(j[1] == 0):
+                    correct += 1
+                    confusionMatrix[0][0] += 1
+                else:
+                    wrong += 1
+                    confusionMatrix[0][1] += 1
 
+            if(GivenxyEqual[-1][0] < GivenxyEqual[-1][1]):
+                if(j[1] == 0):
+                    wrong += 1
+                    confusionMatrix[1][0] += 1
+                else:
+                    correct += 1
+                    confusionMatrix[1][1] += 1
+    return (correct, wrong, confusionMatrix)
 
-# data/testdata.manual.2009.06.14.csv
-# data/training.1600000.processed.noemoticon.csv
 # preprocessing
-trainingData = pd.read_csv("../data/training.1600000.processed.noemoticon.csv",
-                                header = None,
-                                names = ['polarity', 'id', 'date', 'query',
-                                                        'username', 'tweet'],
-                                encoding = "Latin-1")
-
-testingData = pd.read_csv("../data/training.1600000.processed.noemoticon.csv",
-                                header = None,
-                                names = ['polarity', 'id', 'date', 'query',
-                                                        'username', 'tweet'],
-                                encoding = "ISO-8859-1")
 
 # main code
 def main():
@@ -78,42 +113,27 @@ def main():
     phi = [(yEquals[0]+1)/(m+2), (yEquals[1]+1)/(m+2)]
 
     (dicto, keysInDict) = total_keys(dictionary[0], dictionary[1])
-    print(keysInDict)
+
     philyEquals = [{j: (i+1)/(wcyEquals[k]+keysInDict) for j, i in
                                     dictionary[k].items()} for k in range(2)]   #phi x = l and y = k
 
-    GivenxyEqual = list()
-    correct = 0
-    wrong = 0
-    for j in testingData.itertuples():
-        if j[1] == 0 or j[1] == 4 :
-            words = j[6].replace(',', ' ').replace('.', ' ').split()
-            gxye0 = phi[0]
-            gxye1 = phi[1]
-            for k in words:
-                if k in philyEquals[0]:
-                    gxye0 += math.log(philyEquals[0][k])
-                else:
-                    gxye0 += math.log(1/(keysInDict + wcyEquals[0]))
-                if k in philyEquals[1]:
-                    gxye1 += math.log(philyEquals[1][k])
-                else:
-                    gxye1 += math.log(1/(keysInDict + wcyEquals[1]))
-            GivenxyEqual.append([math.log(phi[0]) + gxye0, math.log(phi[1]) + gxye1])
-            if(GivenxyEqual[-1][0] > GivenxyEqual[-1][1]):
-                if(j[1] == 0):
-                    correct += 1
-                else:
-                    wrong += 1
+    confusionMatrix = [[0,0], [0,0]]
 
-            if(GivenxyEqual[-1][0] < GivenxyEqual[-1][1]):
-                if(j[1] == 0):
-                    wrong += 1
-                else:
-                    correct += 1
+    print("Time:\t", time.time() - start, "\n----------------------------------Q1(a)-------------------------------------")
+    (correct, wrong, confusionMatrix) = accuracy(trainingData, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix)
+    print("accuracy over the training: ", (correct*100)/(correct + wrong), "\n")
+    print("confusionMatrix:\t", "negative", "\t", "positive")
+    print("negative(predicted)\t", confusionMatrix[0][0], "\t", confusionMatrix[0][1])
+    print("positive(predicted)\t", confusionMatrix[1][0], "\t\t", confusionMatrix[1][1])
 
-    print(time.time() - start)
-    print((correct*100)/(correct + wrong))
+    print("\nTime:\t", time.time() - start, "\n----------------------------------Q2(a)-------------------------------------")
+    confusionMatrix = [[0,0], [0,0]]
+    (correct, wrong, confusionMatrix) = accuracy(testingData, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix)
+    print("accuracy over the test: ", (correct*100)/(correct + wrong), "\n")
+    print("confusionMatrix:\t", "negative", "\t", "positive")
+    print("negative(predicted)\t", confusionMatrix[0][0], "\t\t", confusionMatrix[0][1])
+    print("positive(predicted)\t", confusionMatrix[1][0], "\t\t", confusionMatrix[1][1])
+    print("\nTime:\t", time.time() - start, "\n----------------------------------")
 
 if __name__ == '__main__':
     main()
