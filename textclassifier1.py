@@ -2,11 +2,6 @@
 import pandas as pd
 import math
 import time
-# import nltk
-# from nltk.corpus import stopwords
-# from nltk.tokenize import word_tokenize
-# from nltk.tokenize import TweetTokenizer
-# from nltk.stem import PorterStemmer
 
 # data/testdata.manual.2009.06.14.csv
 # data/training.1600000.processed.noemoticon.csv
@@ -21,10 +16,6 @@ header = None,
 names = ['polarity', 'id', 'date', 'query',
 'username', 'tweet'],
 encoding = "ISO-8859-1")
-
-# stop_words = set(stopwords.words('english')).union({',', '.', '!', ' ', '\n', '\t'})
-# stemming = PorterStemmer()
-# tknzr = TweetTokenizer(strip_handles=True)
 
 # functions
 def processingDocument(yEqualsK, words, dictionary, yEqualsKwc):
@@ -59,14 +50,7 @@ def accuracy(Data, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix):
     wrong = 0
     for j in Data.itertuples():
         if j[1] == 0 or j[1] == 4 :
-            words = j[6].replace(',', ' ').replace('.', ' ').split()          #first part Q1(a)
-            # noTwitter_tokens = tknzr.tokenize(j[6])
-            # word_tokens_noTwitter = []
-            # for w in noTwitter_tokens:
-            #     word_tokens_noTwitter += word_tokenize(w)
-            # words = [stemming.stem(w) for w in word_tokens_noTwitter if not w in stop_words]
-            # words = [stemming.stem(w) for w in allWords if not w in stop_words]
-
+            words = j[6].replace(',', ' ').replace('.', ' ').split()
             gxye0 = phi[0]
             gxye1 = phi[1]
             for k in words:
@@ -107,13 +91,7 @@ def main():
     start = time.time()
 
     for j in trainingData.itertuples():
-        # noTwitter_tokens = tknzr.tokenize(j[6])
-        words = j[6].replace(',', ' ').replace('.', ' ').split()              #from the first code part a
-        # word_tokens_noTwitter = []
-        # for w in noTwitter_tokens:
-        #     word_tokens_noTwitter += word_tokenize(w)
-        # words = [stemming.stem(w) for w in word_tokens_noTwitter if not w in stop_words]
-        # words = [stemming.stem(w) for w in allWords if not w in stop_words]
+        words = j[6].replace(',', ' ').replace('.', ' ').split()
 
         wordcount = 0
         if(j[1] == 0):
@@ -140,8 +118,6 @@ def main():
 
     philyEquals = [{j: (i+1)/(wcyEquals[k]+keysInDict) for j, i in
                                     dictionary[k].items()} for k in range(2)]   #phi x = l and y = k
-
-    print(philyEquals)
 
     confusionMatrix = [[0,0], [0,0]]
 
