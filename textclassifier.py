@@ -2,6 +2,11 @@
 import pandas as pd
 import math
 import time
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.tokenize import TweetTokenizer
+from nltk.stem import PorterStemmer
 
 # data/testdata.manual.2009.06.14.csv
 # data/training.1600000.processed.noemoticon.csv
@@ -16,6 +21,10 @@ header = None,
 names = ['polarity', 'id', 'date', 'query',
 'username', 'tweet'],
 encoding = "ISO-8859-1")
+
+stop_words = set(stopwords.words('english')).union({',', '.', '!', ' ', '\n', '\t'})
+stemming = PorterStemmer()
+tknzr = TweetTokenizer(strip_handles=True)
 
 # functions
 def processingDocument(yEqualsK, words, dictionary, yEqualsKwc):
@@ -50,7 +59,13 @@ def accuracy(Data, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix):
     wrong = 0
     for j in Data.itertuples():
         if j[1] == 0 or j[1] == 4 :
-            words = j[6].replace(',', ' ').replace('.', ' ').split()
+            # words = j[6].replace(',', ' ').replace('.', ' ').split()          #first part Q1(a)
+            word_tokens = word_tokenize(j[6])
+            word_tokens_noTwitter = []
+            for w in word_tokens:
+                word_tokens_noTwitter += tknzr.tokenize(w)
+            words = [stemming.stem(w) for w in word_tokens_noTwitter if not w in stop_words]
+
             gxye0 = phi[0]
             gxye1 = phi[1]
             for k in words:
@@ -89,8 +104,15 @@ def main():
     dictionary = [dict(), dict()]                                               # dictionary of count of all the words
     keysInDict = [0, 0]
     start = time.time()
+
     for j in trainingData.itertuples():
-        words = j[6].replace(',', ' ').replace('.', ' ').split()
+        # words = j[6].replace(',', ' ').replace('.', ' ').split()              #from the first code part a
+        word_tokens = word_tokenize(j[6])
+        word_tokens_noTwitter = []
+        for w in word_tokens:
+            word_tokens_noTwitter += tknzr.tokenize(w)
+        words = [stemming.stem(w) for w in word_tokens_noTwitter if not w in stop_words]
+
         wordcount = 0
         if(j[1] == 0):
             (yEquals[0], dictionary[0], wcyEquals[0]) = processingDocument(
@@ -124,7 +146,7 @@ def main():
     print("accuracy over the training: ", (correct*100)/(correct + wrong), "\n")
     print("confusionMatrix:\t", "negative", "\t", "positive")
     print("negative(predicted)\t", confusionMatrix[0][0], "\t", confusionMatrix[0][1])
-    print("positive(predicted)\t", confusionMatrix[1][0], "\t\t", confusionMatrix[1][1])
+    print("positive(predicted)\t", confusionMatrix[1][0], "\t", confusionMatrix[1][1])
 
     print("\nTime:\t", time.time() - start, "\n----------------------------------Q2(a)-------------------------------------")
     confusionMatrix = [[0,0], [0,0]]
