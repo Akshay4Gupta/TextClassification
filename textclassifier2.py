@@ -9,6 +9,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import TweetTokenizer
 from nltk.stem import PorterStemmer
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # -----------------------------------------------------------------------preprocessing----------------------------------------------------------------------------------
 # data/testdata.manual.2009.06.14.csv
@@ -29,6 +30,7 @@ stop_words = set(stopwords.words('english')).union({',', '.', '!', ' ', '\n', '\
 stemming = PorterStemmer()
 # tknzr = TweetTokenizer(strip_handles=True)
 twittere = re.compile("^@[a-zA-Z0-9_]*$")
+vectorizer = TfidfVectorizer()
 
 # -------------------------------------------------------------------------functions-------------------------------------------------------------------------------------
 def processingDocument(yEqualsK, words, dictionary, yEqualsKwc):
@@ -42,6 +44,28 @@ def processingDocument(yEqualsK, words, dictionary, yEqualsKwc):
             dictionary[word] = 1
     yEqualsKwc += wordcount
     return yEqualsK, dictionary, yEqualsKwc
+
+def wordsExtraction(data, case):
+    dataBuilt = dict()
+    for j in data.itertuples():
+        if(j[1] != 0 and j[1] != 4):
+            continue
+        words = list()
+        if case == 'd':
+            word_tokens_noTwitter = tokenize(j[6])
+
+            # -------------------------------------------------------------------------------twitter tokenize------------------------------------------------------------
+            # noTwitter_tokens = tknzr.tokenize(j[6])
+            # word_tokens_noTwitter = []
+            # for w in noTwitter_tokens:
+            #     word_tokens_noTwitter += w.replace(',', ' ').replace('.', ' ').split()          #first part Q1(a)
+            # -------------------------------------------------------------------------------twitter tokenize------------------------------------------------------------
+
+            words = [stemming.stem(w) for w in word_tokens_noTwitter if not w in stop_words]
+        elif case == 'a':
+            words = j[6].replace(',', ' ').replace('.', ' ').split()
+        dataBuilt[j[2]] = (j[1], words)
+    return dataBuilt
 
 def total_keys(dict1, dict2):
     dicto = {}
@@ -66,52 +90,35 @@ def accuracy(Data, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix, cas
     GivenxyEqual = list()
     correct = 0
     wrong = 0
-    for j in Data.itertuples():
-        if j[1] == 0 or j[1] == 4 :
-            words = list()
-            if case == 'd':
-                word_tokens_noTwitter = tokenize(j[6])
+    for (id, (polarity, words)) in Data.items():
+        gxye0 = phi[0]
+        gxye1 = phi[1]
+        for k in words:
+            if k in philyEquals[0]:
+                gxye0 += math.log(philyEquals[0][k])
+            else:
+                gxye0 += math.log(1/(keysInDict + wcyEquals[0]))
+            if k in philyEquals[1]:
+                gxye1 += math.log(philyEquals[1][k])
+            else:
+                gxye1 += math.log(1/(keysInDict + wcyEquals[1]))
+        GivenxyEqual.append([math.log(phi[0]) + gxye0, math.log(phi[1]) + gxye1])
+        if(GivenxyEqual[-1][0] > GivenxyEqual[-1][1]):
+            if(polarity == 0):
+                correct += 1
+                confusionMatrix[0][0] += 1
+            else:
+                wrong += 1
+                confusionMatrix[0][1] += 1
 
-                # -------------------------------------------------------------------------------twitter tokenize------------------------------------------------------------
-                # noTwitter_tokens = tknzr.tokenize(j[6])
-                # word_tokens_noTwitter = []
-                # for w in noTwitter_tokens:
-                #     word_tokens_noTwitter += w.replace(',', ' ').replace('.', ' ').split()          #first part Q1(a)
-                # -----------------------------------------------------------------------------------------------------------------------------------------------------------
-
-                words = [stemming.stem(w) for w in word_tokens_noTwitter if not w in stop_words]
-            elif case == 'a':
-                words = j[6].replace(',', ' ').replace('.', ' ').split()
-
-            gxye0 = phi[0]
-            gxye1 = phi[1]
-            for k in words:
-                if k in philyEquals[0]:
-                    gxye0 += math.log(philyEquals[0][k])
-                else:
-                    gxye0 += math.log(1/(keysInDict + wcyEquals[0]))
-                if k in philyEquals[1]:
-                    gxye1 += math.log(philyEquals[1][k])
-                else:
-                    gxye1 += math.log(1/(keysInDict + wcyEquals[1]))
-            GivenxyEqual.append([math.log(phi[0]) + gxye0, math.log(phi[1]) + gxye1])
-            if(GivenxyEqual[-1][0] > GivenxyEqual[-1][1]):
-                if(j[1] == 0):
-                    correct += 1
-                    confusionMatrix[0][0] += 1
-                else:
-                    wrong += 1
-                    confusionMatrix[0][1] += 1
-
-            if(GivenxyEqual[-1][0] < GivenxyEqual[-1][1]):
-                if(j[1] == 0):
-                    wrong += 1
-                    confusionMatrix[1][0] += 1
-                else:
-                    correct += 1
-                    confusionMatrix[1][1] += 1
+        if(GivenxyEqual[-1][0] < GivenxyEqual[-1][1]):
+            if(polarity == 0):
+                wrong += 1
+                confusionMatrix[1][0] += 1
+            else:
+                correct += 1
+                confusionMatrix[1][1] += 1
     return (correct, wrong, confusionMatrix)
-
 
 # --------------------------------------------------------------------------main code------------------------------------------------------------------------------------
 def main():
@@ -121,29 +128,14 @@ def main():
     keysInDict = [0, 0]
     start = time.time()
     case = sys.argv[1]
-
-    for j in trainingData.itertuples():
-        words = list()
-        if case == 'd':
-            word_tokens_noTwitter = tokenize(j[6])
-
-            # -------------------------------------------------------------------------------twitter tokenize------------------------------------------------------------
-            # noTwitter_tokens = tknzr.tokenize(j[6])
-            # word_tokens_noTwitter = []
-            # for w in noTwitter_tokens:
-            #     word_tokens_noTwitter += w.replace(',', ' ').replace('.', ' ').split()          #first part Q1(a)
-            # -------------------------------------------------------------------------------twitter tokenize------------------------------------------------------------
-
-            words = [stemming.stem(w) for w in word_tokens_noTwitter if not w in stop_words]
-        elif case == 'a':
-            words = j[6].replace(',', ' ').replace('.', ' ').split()
-
+    trainingDataPreprocessed = wordsExtraction(trainingData, case)
+    testingDataPreprocessed = wordsExtraction(testingData, case)
+    for (id, (polarity, words)) in trainingDataPreprocessed.items():
         wordcount = 0
-        if(j[1] == 0):
+        if(polarity == 0):
             (yEquals[0], dictionary[0], wcyEquals[0]) = processingDocument(
                                 yEquals[0], words, dictionary[0], wcyEquals[0])
-        elif(j[1] == 4):
-
+        elif(polarity == 4):
             # -----------------------------------------------------------------------------without function calling-----------------------------------------------------
             # yEquals[1] += 1
             # for word in words:
@@ -154,7 +146,6 @@ def main():
             #         dictionary[1][word] = 1
             # wcyEquals[1] += wordcount
             # ----------------------------------------------------------------------------------------------------------------------------------
-
             (yEquals[1], dictionary[1], wcyEquals[1]) = processingDocument(
                                 yEquals[1], words, dictionary[1], wcyEquals[1])
 
@@ -170,7 +161,7 @@ def main():
     confusionMatrix = [[0,0], [0,0]]
 
     print("Time:\t", time.time() - start, "\n----------------------------------Q1(a, c) Training Part-------------------------------------")
-    (correct, wrong, confusionMatrix) = accuracy(trainingData, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix, case)
+    (correct, wrong, confusionMatrix) = accuracy(trainingDataPreprocessed, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix, case)
     print("accuracy over the training: ", (correct*100)/(correct + wrong), "\n")
     print("confusionMatrix:\t", "negative", "\t", "positive")
     print("negative(predicted)\t", confusionMatrix[0][0], "\t", confusionMatrix[0][1])
@@ -178,7 +169,7 @@ def main():
 
     print("\nTime:\t", time.time() - start, "\n----------------------------------Q1(a,c) Testing Part-------------------------------------")
     confusionMatrix = [[0,0], [0,0]]
-    (correct, wrong, confusionMatrix) = accuracy(testingData, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix, case)
+    (correct, wrong, confusionMatrix) = accuracy(testingDataPreprocessed, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix, case)
     print("accuracy over the test: ", (correct*100)/(correct + wrong), "\n")
     print("confusionMatrix:\t", "negative", "\t", "positive")
     print("negative(predicted)\t", confusionMatrix[0][0], "\t\t", confusionMatrix[0][1])
