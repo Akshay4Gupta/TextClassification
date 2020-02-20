@@ -59,7 +59,7 @@ def total_keys(dict1, dict2):
 
 def tokenize(word):
     wordlist = word.replace(',', ' ').replace('.', ' ').split()
-    word_no_twitter = [w for w in wordlist if (not twittere.match(w))and len(w) < 15]
+    word_no_twitter = [w for w in wordlist if (not twittere.match(w))]
     return word_no_twitter
 
 def accuracy(Data, philyEquals, phi, keysInDict, wcyEquals, confusionMatrix, case):
